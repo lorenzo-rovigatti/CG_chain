@@ -27,11 +27,12 @@ struct Atom {
 	double m;
 	double eps;
 	double x;
-	double v;
-	double f_inter, f_intra;
-	double E;
+	double v = 0.;
+	double f_inter = 0.;
+	double f_intra = 0.;
+	double E = 0.;
 
-	Atom(int bead, double nm, double neps, double nx) : bead_id(bead), m(nm), eps(neps), x(nx), v(0) {
+	Atom(int bead, double nm, double neps, double nx) : bead_id(bead), m(nm), eps(neps), x(nx) {
 
 	}
 
@@ -228,7 +229,7 @@ int main(int argc, char *argv[]) {
 
 	energy_file.close();
 
-	// print the force as a function inter-bead distance
+	// print the force as a function of the inter-bead distance
 	F_eff.print();
 	
 	return 0;
