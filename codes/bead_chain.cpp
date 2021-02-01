@@ -7,6 +7,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include "CG/definitions.h"
+#include "CG/LookupTable.h"
 #include "utils/strings.h"
 #include "utils/Input.h"
 #include "utils/thermostat.h"
@@ -14,28 +16,9 @@
 #define SQR(x) ((x) * (x))
 
 struct Chain;
-struct Bead;
 struct Input;
 
 Chain build_from_topology_file(Input &input);
-void potential(Bead &p, Bead &q, double shift_by);
-
-// a single atom
-struct Bead {
-	double m;
-	double x;
-	double v = 0.;
-	double force = 0.;
-	double E = 0.;
-
-	Bead(double nm, double nx) : m(nm), x(nx) {
-
-	}
-
-	double accel() {
-		return force / m;
-	}
-};
 
 // the whole chain
 struct Chain {
@@ -87,6 +70,8 @@ int main(int argc, char *argv[]) {
 	double thermostat_pt = (2. * T * newtonian_steps * dt) / (T * newtonian_steps * dt  + 2 * diff_coeff);
 	BrownianThermostat thermostat(T, thermostat_pt);
 
+	LookupTable lt(input.get("lookup_table_file"), 100);
+
 	// extract velocities from the correct maxwell boltzman distribution
 	thermostat.random_velocities(chain.beads);
 
@@ -111,7 +96,7 @@ int main(int argc, char *argv[]) {
 				next = chain.beads.begin();
 				shift_by = chain.L();
 			}
-			potential(*bead, *next, shift_by);
+			lt.potential(*bead, *next, shift_by);
 			
 		}
 
@@ -161,11 +146,6 @@ int main(int argc, char *argv[]) {
 	energy_file.close();
 
 	return 0;
-}
-
-void potential(Bead &p, Bead &q, double shift_by) {
-	double r = q.x - p.x + shift_by;
-
 }
 
 Chain build_from_topology_file(Input &input) {

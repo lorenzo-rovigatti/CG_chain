@@ -7,4 +7,4 @@ set(CMAKE_BUILD_TYPE Release)
 
 add_executable(Veff_chain Veff_chain.cpp utils/strings.cpp utils/Input.cpp)
 
-add_executable(bead_chain bead_chain.cpp utils/strings.cpp utils/Input.cpp)
+add_executable(bead_chain bead_chain.cpp CG/LookupTable.cpp utils/strings.cpp utils/Input.cpp)
