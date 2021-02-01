@@ -83,12 +83,13 @@ struct EffectiveForce {
 	std::vector<double> data;
 	std::vector<long long int> counter;
 	
-	EffectiveForce(double nmin, double nmax, int bins) :
+	EffectiveForce(double nmin, double nmax, int bins, bool rescale) :
 		min(nmin),
 		max(nmax),
 		data(bins),
 		counter(bins) {
 		bin_size = (nmax - nmin) / (double) bins;
+		_rescale = rescale;
 	}
 
 	// accumulate the force
@@ -108,13 +109,18 @@ struct EffectiveForce {
 			if(counter[i] > 0) {
 				double R = (i + 0.5) * bin_size + min;
 				double F = data[i] / (double) counter[i];
-				// we scale these values by the bond length to match Marco et al's units of measurements
-				R /= Chain::bond_length;
-				F *= Chain::bond_length;
+				if(_rescale) {
+					// we scale these values by the bond length to match Marco et al's units of measurements
+					R /= Chain::bond_length;
+					F *= Chain::bond_length;
+				}
 				std::cout << R << " " << F << std::endl;
 			}
 		}
 	}
+
+private:
+	bool _rescale;
 };
 
 int main(int argc, char *argv[]) {
@@ -131,7 +137,6 @@ int main(int argc, char *argv[]) {
 	// get the values we need from the input file
 	double T = 1. / atof(input.get("beta"));
 	Chain chain = build_from_topology_file(input);
-	EffectiveForce F_eff(2.5, 5., 100);
 	int newtonian_steps = atoi(input.get("newtonian_steps"));
 	double dt = atof(input.get("dt"));
 	double diff_coeff = atof(input.get("diff_coeff"));
@@ -139,6 +144,9 @@ int main(int argc, char *argv[]) {
 	long long int equilibration_steps = atoll(input.get("equilibration_steps"));
 	long long int print_every = atoll(input.get("print_every"));
 	long long int sample_every = atoll(input.get("sample_every"));
+	bool rescale = atoi(input.get("force_rescale", "1"));
+
+	EffectiveForce F_eff(2.5, 5., 100, rescale);
 
 	double thermostat_pt = (2. * T * newtonian_steps * dt) / (T * newtonian_steps * dt  + 2 * diff_coeff);
 	BrownianThermostat thermostat(T, thermostat_pt);

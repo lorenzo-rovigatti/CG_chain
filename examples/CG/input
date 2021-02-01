@@ -1,0 +1,15 @@
+beta = 1.0
+topology_file = topology.dat
+
+steps = 1000000000
+equilibration_steps = 10000
+print_every = 10000
+sample_every = 100
+
+dt = 0.001
+diff_coeff = 0.5
+newtonian_steps = 53
+
+# species
+A = 1, 10
+B = 10, 0.1
