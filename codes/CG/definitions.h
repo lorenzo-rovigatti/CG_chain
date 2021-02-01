@@ -8,15 +8,17 @@
 #ifndef CODES_CG_DEFINITIONS_H_
 #define CODES_CG_DEFINITIONS_H_
 
+#define SQR(x) ((x) * (x))
+
 // a single atom
-struct Bead {
+struct CGBead {
 	double m;
 	double x;
 	double v = 0.;
 	double force = 0.;
 	double E = 0.;
 
-	Bead(double nm, double nx) : m(nm), x(nx) {
+	CGBead(double nm, double nx) : m(nm), x(nx) {
 
 	}
 

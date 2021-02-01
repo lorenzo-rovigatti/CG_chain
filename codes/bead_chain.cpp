@@ -13,8 +13,6 @@
 #include "utils/Input.h"
 #include "utils/thermostat.h"
 
-#define SQR(x) ((x) * (x))
-
 struct Chain;
 struct Input;
 
@@ -23,7 +21,7 @@ Chain build_from_topology_file(Input &input);
 // the whole chain
 struct Chain {
 	int _bead_size;
-	std::vector<Bead> beads;
+	std::vector<CGBead> beads;
 	// a constant used to generate the initial configuration and to set the length of the chain
 	static constexpr double bond_length = std::pow(2., 1. / 6.);
 
@@ -170,7 +168,7 @@ Chain build_from_topology_file(Input &input) {
 	for(int i = 0; i < N_beads; i++) {
 		double x = chain.bead_bond_length() * i;
 
-		Bead bead(mass, x);
+		CGBead bead(mass, x);
 
 		chain.beads.push_back(bead);
 	}

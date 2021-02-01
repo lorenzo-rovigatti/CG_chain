@@ -55,7 +55,7 @@ public:
 	LookupTable(std::string filename, int points);
 	virtual ~LookupTable();
 
-	void potential(Bead &p, Bead &q, double shift_by);
+	void potential(CGBead &p, CGBead &q, double shift_by);
 
 private:
 	double _linear_interpolation(double x, std::vector<double> &x_data, std::vector<double> fx_data, int points);

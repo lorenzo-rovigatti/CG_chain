@@ -21,7 +21,7 @@ void Mesh::build(LookupTable *that, double (LookupTable::*f)(double, void*), dou
 
 	double dx = (xupp - xlow) / (double) npoints;
 	delta = dx;
-	inv_sqr_delta = 1 / (dx * dx);
+	inv_sqr_delta = 1. / SQR(dx);
 	xlow = mxlow;
 	xupp = mxupp;
 
@@ -98,7 +98,7 @@ LookupTable::~LookupTable() {
 
 }
 
-void LookupTable::potential(Bead &p, Bead &q, double shift_by) {
+void LookupTable::potential(CGBead &p, CGBead &q, double shift_by) {
 	double r = q.x - p.x + shift_by;
 
 	double energy = _lookup_table.query(r);
