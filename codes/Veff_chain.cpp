@@ -7,6 +7,10 @@
 #include <sstream>
 #include <algorithm>
 
+#include "utils/strings.h"
+#include "utils/Input.h"
+#include "utils/thermostat.h"
+
 #define SQR(x) ((x) * (x))
 #define BEAD_SIZE 3
 
@@ -14,40 +18,8 @@ struct Chain;
 struct Atom;
 struct Input;
 
-std::string& ltrim(std::string& str, const std::string& chars = "\t\n\v\f\r "); 
-std::string& rtrim(std::string& str, const std::string& chars = "\t\n\v\f\r "); 
-std::string& trim(std::string& str, const std::string& chars = "\t\n\v\f\r ");
 Chain build_from_topology_file(Input &input);
-void random_velocities(Chain &chain, double T);
 void LJ(Atom &p, Atom &q, double shift_by);
-std::vector<std::string> split(const std::string &s, char delim);
-
-// get a random number from a gaussian with zero mean and unity variance
-double gaussian() {
-	unsigned int isNextG = 0;
-	double nextG;
-	double toRet;
-	double u, v, w;
-
-	if(isNextG) {
-		isNextG = 0;
-		return nextG;
-	}
-
-	w = 2.;
-	while(w >= 1.0) {
-		u = 2. * drand48() - 1.0;
-		v = 2. * drand48() - 1.0;
-		w = u * u + v * v;
-	}
-
-	w = std::sqrt((-2. * std::log(w)) / w);
-	toRet = u * w;
-	nextG = v * w;
-	isNextG = 1;
-
-	return toRet;
-}
 
 // a single atom
 struct Atom {
@@ -144,59 +116,6 @@ struct EffectiveForce {
 	}
 };
 
-// a very simple input parser
-struct Input {
-	std::map<std::string, std::string> input_map;
-
-	// parse the input file
-	Input(char *filename) {
-		std::ifstream inp(filename);
-		
-		if(!inp.good()) {
-			std::cerr << "Invalid input file " << filename << std::endl;
-			exit(1);
-		}
-		
-		while(inp.good()) {
-			std::string line;
-			std::getline(inp, line);
-			line = trim(line);
-			// skip empty lines and lines starting with #
-			if(line.size() == 0 || line[0] == '#') {
-				continue;
-			}
-			auto spl = split(line, '=');
-			if(spl.size() != 2) {
-				std::cerr << "Invalid line '" << line << "'" << std::endl;
-				exit(1);
-			}
-			
-			input_map[spl[0]] = spl[1];
-		}
-	}
-
-	// get a key from the stored map, exiting if the key is not found
-	const char *get(std::string key) {
-		if(input_map.find(key) == input_map.end()) {
-			std::cerr << "Key '" << key << "' not found in the input file" << std::endl;
-			exit(1);
-		}
-
-		return input_map[key].c_str();
-	}
-
-	// keys that specify a species' mass and epsilon are treated differently. This method returns a pair
-	// containing the mass and epsilon values associated to the specific key (which should be the name of the species)
-	std::pair<double, double> get_mass_and_epsilon(std::string key) {
-		std::string value = get(key);
-		auto spl = split(value, ',');
-		double mass = atof(spl[0].c_str());
-		double epsilon = atof(spl[1].c_str());
-
-		return std::pair<double, double>({mass, epsilon});
-	}
-};
-
 int main(int argc, char *argv[]) {
 	if(argc < 2) {
 		std::cerr << "Usage is " << argv[0] << " input_file" << std::endl;
@@ -220,9 +139,11 @@ int main(int argc, char *argv[]) {
 	long long int print_every = atoll(input.get("print_every"));
 	long long int sample_every = atoll(input.get("sample_every"));
 
-	// extract velocities from the correct maxwell boltzman distribution
-	random_velocities(chain, T);
 	double thermostat_pt = (2. * T * newtonian_steps * dt) / (T * newtonian_steps * dt  + 2 * diff_coeff);
+	BrownianThermostat thermostat(T, thermostat_pt);
+
+	// extract velocities from the correct maxwell boltzman distribution
+	thermostat.random_velocities(chain.atoms);
 
 	std::cerr << "INFO: thermostat pt: " << thermostat_pt << std::endl;
 
@@ -256,13 +177,7 @@ int main(int argc, char *argv[]) {
 
 		// we apply the thermostat once every newtonian_steps steps
 		if(i % newtonian_steps == 0) {
-			for(auto &atom : chain.atoms) {
-				// there is a certain chance (pt) that an atom undergoes a brownian collision so that its velocity is extracted anew from a maxwellian
-				if(drand48() < thermostat_pt) {
-					double factor = std::sqrt(T / atom.m);
-					atom.v = gaussian() * factor;
-				}
-			}
+			thermostat.apply(chain.atoms);
 		}
 
 		// print the potential, kinetic and total energy per particle
@@ -291,6 +206,7 @@ int main(int argc, char *argv[]) {
 			double energy_per_particle = pot_energy + kin_energy;
 			energy_file << i * dt << " " << pot_energy << " " << kin_energy << " " << energy_per_particle << std::endl;
 		}
+
 		// sample the inter-bead force
 		if(i > equilibration_steps && i % sample_every == 0) {
 			for(auto bead = chain.beads.begin(); bead != chain.beads.end(); bead++) {
@@ -303,7 +219,7 @@ int main(int argc, char *argv[]) {
 				double R = next->R() - bead->R() + shift_by;
 
 				// the minus sign comes from the fact that we take the force acting on the bead that is on the left: if the force
-				// acting on it is negative then the bead will be pushed towards larger R (i.e. is repelled by the other bead and
+				// acting on it is negative then the bead will be pushed towards larger R (i.e. itis repelled by the other bead and
 				// hence its "force" should be positive)
 				F_eff.add(R, -bead->F());
 			}
@@ -335,13 +251,6 @@ void LJ(Atom &p, Atom &q, double shift_by) {
 	else {
 		p.f_inter += force;
 		q.f_inter -= force;
-	}
-}
-
-void random_velocities(Chain &chain, double T) {
-	for(auto &a : chain.atoms) {
-		double factor = std::sqrt(T / a.m);
-		a.v = gaussian() * factor;
 	}
 }
 
@@ -388,33 +297,3 @@ Chain build_from_topology_file(Input &input) {
 	return chain;
 }
 
-std::string& ltrim(std::string& str, const std::string& chars) {
-    str.erase(0, str.find_first_not_of(chars));
-    return str;
-}
- 
-std::string& rtrim(std::string& str, const std::string& chars) {
-    str.erase(str.find_last_not_of(chars) + 1);
-    return str;
-}
- 
-std::string& trim(std::string& str, const std::string& chars) {
-    return ltrim(rtrim(str, chars), chars);
-}
-
-std::vector<std::string> split(const std::string &s, char delim) {
-	std::string s_copy(s);
-	trim(s_copy);
-	std::vector<std::string> elems;
-	std::stringstream ss(s_copy);
-	std::string item;
-
-	while(getline(ss, item, delim)) {
-		trim(item);
-		if(item.length() > 0) {
-			elems.push_back(item);
-		}
-	}
-
-	return elems;
-}
