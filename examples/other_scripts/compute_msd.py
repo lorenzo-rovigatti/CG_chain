@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import baggianalysis as ba
+import sys
 
 class CGParser(ba.BaseParser):
     def __init__(self):
@@ -27,9 +28,13 @@ class CGParser(ba.BaseParser):
             
         return syst
 
+if len(sys.argv) < 2:
+    print("Usage is %s folder" % sys.argv[0], file=sys.stderr)
+    exit(1)
+
 parser = CGParser()
 trajectory = ba.LazyTrajectory(parser)
-trajectory.initialise_from_folder("confs", "bead_conf*")
+trajectory.initialise_from_folder(sys.argv[1], "bead_conf*")
 
 msd_obs = ba.MSD(20, True)
 msd_obs.analyse_and_print(trajectory, "msd.dat")
