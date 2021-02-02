@@ -13,3 +13,5 @@ newtonian_steps = 53
 # species
 A = 1, 10
 B = 10, 0.1
+
+# print_bead_conf_every = 10000

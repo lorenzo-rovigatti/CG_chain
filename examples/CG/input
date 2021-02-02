@@ -14,3 +14,4 @@ bead_mass = 12
 bead_size = 3
 
 lookup_table_file = lookup_table.dat
+print_bead_conf_every = 1000

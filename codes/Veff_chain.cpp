@@ -145,6 +145,12 @@ int main(int argc, char *argv[]) {
 	long long int print_every = atoll(input.get("print_every"));
 	long long int sample_every = atoll(input.get("sample_every"));
 	bool rescale = atoi(input.get("force_rescale", "1"));
+	long long int print_bead_conf_every = atoll(input.get("print_bead_conf_every", "0"));
+	std::string trajectory_file(input.get("bead_trajectory_file", "trajectory.dat"));
+	if(print_bead_conf_every) {
+		std::ofstream trajectory(trajectory_file.c_str());
+		trajectory.close();
+	}
 
 	EffectiveForce F_eff(2.5, 5., 100, rescale);
 
@@ -232,6 +238,17 @@ int main(int argc, char *argv[]) {
 				// hence its "force" should be positive)
 				F_eff.add(R, -bead->F());
 			}
+		}
+
+		if(i > equilibration_steps && print_bead_conf_every && (i % print_bead_conf_every == 0)) {
+			std::ofstream trajectory(trajectory_file.c_str(), std::ios::app);
+
+			trajectory << chain.beads.size() << " " << chain.L() << " " << i << std::endl;
+			for(auto &bead : chain.beads) {
+				trajectory << bead.R() << std::endl;
+			}
+
+			trajectory.close();
 		}
 	}
 
