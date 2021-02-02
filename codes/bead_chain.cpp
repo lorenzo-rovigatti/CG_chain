@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 		for(auto &bead : chain.beads) {
 			bead.v += bead.accel() * dt * 0.5;
 			bead.x += bead.v * dt;
-			bead.force = 0.;
+			bead.force = bead.E = 0.;
 		}
 
 		// force calculation

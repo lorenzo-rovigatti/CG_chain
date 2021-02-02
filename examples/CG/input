@@ -1,15 +1,16 @@
 beta = 1.0
 topology_file = topology.dat
 
-steps = 1000000000
+steps = 100000000
 equilibration_steps = 10000
-print_every = 10000
+print_every = 100
 sample_every = 100
 
 dt = 0.001
 diff_coeff = 0.5
 newtonian_steps = 53
 
-# species
-A = 1, 10
-B = 10, 0.1
+bead_mass = 12
+bead_size = 3
+
+lookup_table_file = lookup_table.dat

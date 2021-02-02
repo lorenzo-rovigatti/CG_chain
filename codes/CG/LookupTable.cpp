@@ -7,9 +7,6 @@
 
 #include "LookupTable.h"
 
-#include "../utils/strings.h"
-
-#include <iostream>
 #include <fstream>
 #include <cfloat>
 
@@ -17,13 +14,17 @@ void Mesh::build(LookupTable *that, double (LookupTable::*f)(double, void*), dou
 	int i;
 	double x;
 
-	init(npoints);
+	delta = 0;
+	A.resize(npoints + 1);
+	B.resize(npoints + 1);
+	C.resize(npoints + 1);
+	D.resize(npoints + 1);
 
+	xlow = mxlow;
+	xupp = mxupp;
 	double dx = (xupp - xlow) / (double) npoints;
 	delta = dx;
 	inv_sqr_delta = 1. / SQR(dx);
-	xlow = mxlow;
-	xupp = mxupp;
 
 	double fx0, fx1, derx0, derx1;
 
@@ -72,15 +73,12 @@ LookupTable::LookupTable(std::string filename, int points) : _lt_points(points) 
 	bool stop = false;
 	while(!stop) {
 		std::getline(lt_file, line);
-		std::vector<std::string> spl = split(line, ' ');
-		if(spl.size() != 3 || lt_file.eof()) stop = true;
+		if(lt_file.eof() || !data.add_line(line)) {
+			stop = true;
+		}
 		else {
-			data.x[i] = atof(spl[0].c_str());
-			data.fx[i] = atof(spl[1].c_str());
-			data.dfx[i] = atof(spl[2].c_str());
-
 			if(i > 0 && data.x[i] <= data.x[i - 1]) {
-				std::cerr << "The x values of the lookup table should be monotonically increasing (found " << data.x[i] << " <= " << data.x[i - 1];
+				std::cerr << "The x values of the lookup table should be monotonically increasing (found " << data.x[i] << " <= " << data.x[i - 1] << std::endl;
 				exit(1);
 			}
 			i++;
@@ -100,22 +98,29 @@ LookupTable::~LookupTable() {
 
 void LookupTable::potential(CGBead &p, CGBead &q, double shift_by) {
 	double r = q.x - p.x + shift_by;
+	if(r < _lookup_table.xlow) {
+//		std::cerr << "Exceeded the lower bound (" << r << " < " << _lookup_table.xlow << ")" << std::endl;
+		r = _lookup_table.xlow;
+	}
 
 	double energy = _lookup_table.query(r);
 
-	if(r < _lookup_table.xlow) {
-		std::cout << "Exceeded the lower bound (" << r << " < " << _lookup_table.xlow << ")";
-	}
+	p.E += energy;
+	q.E += energy;
 
 	double force = -_lookup_table.query_derivative(r);
 	p.force -= force;
 	q.force += force;
 }
 
-double LookupTable::_linear_interpolation(double x, std::vector<double> &x_data, std::vector<double> fx_data, int points) {
+double LookupTable::_linear_interpolation(double x, std::vector<double> &x_data, std::vector<double> &fx_data) {
+	int points = x_data.size();
 	int ind = -1;
-	for(int i = 0; i < points && ind == -1; i++)
-		if(x_data[i] > x) ind = i;
+	for(int i = 0; i < points && ind == -1; i++) {
+		if(x_data[i] > x) {
+			ind = i;
+		}
+	}
 
 	double val;
 	if(ind == -1) {
@@ -133,10 +138,10 @@ double LookupTable::_linear_interpolation(double x, std::vector<double> &x_data,
 
 double LookupTable::_fx(double x, void *par) {
 	base_function *data = (base_function *) par;
-	return _linear_interpolation(x, data->x, data->fx, data->points);
+	return _linear_interpolation(x, data->x, data->fx);
 }
 
 double LookupTable::_dfx(double x, void *par) {
 	base_function *data = (base_function *) par;
-	return _linear_interpolation(x, data->x, data->dfx, data->points);
+	return _linear_interpolation(x, data->x, data->dfx);
 }
