@@ -65,11 +65,7 @@ int main(int argc, char *argv[]) {
 	long long int print_every = atoll(input.get("print_every"));
 	long long int sample_every = atoll(input.get("sample_every"));
 	long long int print_bead_conf_every = atoll(input.get("print_bead_conf_every", "0"));
-	std::string trajectory_file(input.get("bead_trajectory_file", "trajectory.dat"));
-	if(print_bead_conf_every) {
-		std::ofstream trajectory(trajectory_file.c_str());
-		trajectory.close();
-	}
+	std::string conf_prefix(input.get("bead_conf_prefix", "confs/bead_conf_"));
 
 	double thermostat_pt = (2. * T * newtonian_steps * dt) / (T * newtonian_steps * dt  + 2 * diff_coeff);
 	BrownianThermostat thermostat(T, thermostat_pt);
@@ -143,14 +139,20 @@ int main(int argc, char *argv[]) {
 
 
 		if(i > equilibration_steps && print_bead_conf_every && (i % print_bead_conf_every == 0)) {
-			std::ofstream trajectory(trajectory_file.c_str(), std::ios::app);
+			std::string conf_filename = conf_prefix + std::to_string(i);
+			std::ofstream conf_file(conf_filename.c_str());
 
-			trajectory << chain.beads.size() << " " << chain.L() << " " << i << std::endl;
-			for(auto &bead : chain.beads) {
-				trajectory << bead.x << std::endl;
+			if(!conf_file.good()) {
+				std::cerr << "The bead configuration prefix '" << conf_prefix << "' yields unaccessible paths. Maybe the folder does not exist?" << std::endl;
+				exit(1);
 			}
 
-			trajectory.close();
+			conf_file << chain.beads.size() << " " << chain.L() << " " << i << std::endl;
+			for(auto &bead : chain.beads) {
+				conf_file << bead.x << std::endl;
+			}
+
+			conf_file.close();
 		}
 	}
 
