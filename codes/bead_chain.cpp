@@ -63,7 +63,6 @@ int main(int argc, char *argv[]) {
 	long long int steps = atoll(input.get("steps"));
 	long long int equilibration_steps = atoll(input.get("equilibration_steps"));
 	long long int print_every = atoll(input.get("print_every"));
-	long long int sample_every = atoll(input.get("sample_every"));
 	long long int print_bead_conf_every = atoll(input.get("print_bead_conf_every", "0"));
 	std::string conf_prefix(input.get("bead_conf_prefix", "confs/bead_conf_"));
 

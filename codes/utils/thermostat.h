@@ -10,8 +10,8 @@
 
 // get a random number from a gaussian with zero mean and unity variance
 double gaussian() {
-	unsigned int isNextG = 0;
-	double nextG;
+	static unsigned int isNextG = 0;
+	static double nextG;
 	double toRet;
 	double u, v, w;
 
@@ -44,18 +44,22 @@ public:
 
 	template <typename particle_vector>
 	void random_velocities(particle_vector &v) {
+		double finite_size_factor = v.size() / (v.size() - 1.);
+
 		for(auto &p : v) {
-			double factor = std::sqrt(_T / p.m);
+			double factor = std::sqrt(_T / p.m * finite_size_factor);
 			p.v = gaussian() * factor;
 		}
 	}
 
 	template <typename particle_vector>
 	void apply(particle_vector &v) {
+		double finite_size_factor = v.size() / (v.size() - 1.);
+
 		for(auto &p : v) {
 			// there is a certain chance (pt) that an atom undergoes a brownian collision so that its velocity is extracted anew from a maxwellian
 			if(drand48() < _pt) {
-				double factor = std::sqrt(_T / p.m);
+				double factor = std::sqrt(_T / p.m * finite_size_factor);
 				p.v = gaussian() * factor;
 			}
 		}

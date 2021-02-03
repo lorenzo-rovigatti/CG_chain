@@ -3,7 +3,7 @@ topology_file = topology.dat
 
 steps = 100000000
 equilibration_steps = 10000
-print_every = 100
+print_every = 1000
 sample_every = 100
 
 dt = 0.001
