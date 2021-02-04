@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
 	long long int equilibration_steps = atoll(input.get("equilibration_steps"));
 	long long int print_every = atoll(input.get("print_every"));
 	long long int sample_every = atoll(input.get("sample_every"));
-	bool rescale = atoi(input.get("force_rescale", "1"));
+	bool rescale = atoi(input.get("force_rescale", "0"));
 	long long int print_bead_conf_every = atoll(input.get("print_bead_conf_every", "0"));
 	std::string conf_prefix(input.get("bead_conf_prefix", "confs/bead_conf_"));
 
